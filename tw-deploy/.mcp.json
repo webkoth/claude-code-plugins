@@ -1,0 +1,9 @@
+{
+  "timeweb": {
+    "command": "npx",
+    "args": ["-y", "@webkoth/mcp-timeweb@latest"],
+    "env": {
+      "TIMEWEB_CLOUD_TOKEN": "${TIMEWEB_CLOUD_TOKEN}"
+    }
+  }
+}
