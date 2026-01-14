@@ -1,0 +1,16 @@
+[Unit]
+Description={{APP_NAME}} Node.js Application
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/{{APP_NAME}}
+Environment=NODE_ENV=production
+Environment=PORT={{PORT}}
+ExecStart=/root/.nvm/versions/node/v24.13.0/bin/npm start
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

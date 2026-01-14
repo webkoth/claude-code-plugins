@@ -1,0 +1,16 @@
+[Unit]
+Description={{APP_NAME}} Python Application
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/{{APP_NAME}}
+Environment="PATH=/var/www/{{APP_NAME}}/venv/bin"
+ExecStart=/var/www/{{APP_NAME}}/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:{{PORT}} {{WSGI_APP}}
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

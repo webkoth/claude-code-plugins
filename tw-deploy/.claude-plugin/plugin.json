@@ -1,0 +1,15 @@
+{
+  "name": "tw-deploy",
+  "version": "1.0.0",
+  "description": "Deploy applications to Timeweb Cloud - supports Node.js, Python, PHP, and Static sites",
+  "author": {
+    "name": "Minas Sarkisyan",
+    "url": "https://github.com/webkoth"
+  },
+  "repository": "https://github.com/webkoth/tw-deploy",
+  "license": "MIT",
+  "commands": ["./commands/"],
+  "agents": "./agents/",
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
+}
