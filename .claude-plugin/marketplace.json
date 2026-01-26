@@ -18,6 +18,18 @@
       "source": "./tw-deploy",
       "category": "deployment",
       "homepage": "https://github.com/webkoth/claude-code-plugins/tree/main/tw-deploy"
+    },
+    {
+      "name": "hubmarket-api",
+      "description": "API documentation and testing for Russian marketplaces (Ozon, Wildberries)",
+      "version": "1.0.0",
+      "author": {
+        "name": "Minas Sarkisyan",
+        "email": "minas@webkoth.com"
+      },
+      "source": "./hubmarket-api",
+      "category": "documentation",
+      "homepage": "https://github.com/webkoth/claude-code-plugins/tree/main/hubmarket-api"
     }
   ]
 }
