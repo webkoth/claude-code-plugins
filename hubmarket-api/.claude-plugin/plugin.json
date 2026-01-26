@@ -1,0 +1,6 @@
+{
+  "name": "hubmarket-api",
+  "version": "1.0.0",
+  "description": "API documentation and testing for Russian marketplaces (Ozon, Wildberries)",
+  "skills": "./skills/"
+}
