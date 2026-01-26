@@ -8,9 +8,17 @@ A collection of plugins for [Claude Code](https://claude.ai/code).
 |--------|-------------|
 | [tw-deploy](./tw-deploy/) | Deploy applications to Timeweb Cloud |
 
-## Installation
+## Quick Start
 
-Install plugins via Claude Code:
+### 1. Add this Marketplace
+
+```bash
+/plugin
+# Select "Add Marketplace"
+# Enter: webkoth/claude-code-plugins
+```
+
+### 2. Install Plugin
 
 ```bash
 /plugin install tw-deploy@webkoth
@@ -18,13 +26,23 @@ Install plugins via Claude Code:
 
 Or browse in `/plugin > Discover`
 
-## Adding this Marketplace
-
-To add this marketplace to Claude Code:
+### 3. Setup
 
 ```bash
-/plugin marketplace add webkoth https://github.com/webkoth/claude-code-plugins
+# Set your Timeweb API token
+export TIMEWEB_CLOUD_TOKEN=your-token-here
 ```
+
+Get your token at: https://timeweb.cloud/my/api-keys
+
+## Included
+
+- **tw-deploy plugin** - Deploy commands, agents, skills
+- **@webkoth/mcp-timeweb** - Full Timeweb Cloud API via MCP
+
+## Contributing
+
+PRs welcome! Feel free to submit improvements.
 
 ## License
 

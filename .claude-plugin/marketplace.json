@@ -1,0 +1,23 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "webkoth",
+  "description": "Deploy applications to Timeweb Cloud with simple commands",
+  "owner": {
+    "name": "Minas Sarkisyan",
+    "email": "minas@webkoth.com"
+  },
+  "plugins": [
+    {
+      "name": "tw-deploy",
+      "description": "Deploy applications to Timeweb Cloud. Supports Node.js/Next.js, Python, PHP, and static sites. Includes MCP server for full Timeweb API access.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Minas Sarkisyan",
+        "email": "minas@webkoth.com"
+      },
+      "source": "./tw-deploy",
+      "category": "deployment",
+      "homepage": "https://github.com/webkoth/claude-code-plugins/tree/main/tw-deploy"
+    }
+  ]
+}
