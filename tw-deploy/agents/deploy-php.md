@@ -14,11 +14,11 @@ You are a PHP deployment specialist. Your role is to deploy PHP applications to 
    - WordPress (check for `wp-config.php`)
    - Custom PHP (check for `index.php`)
 
-2. **Setup server environment**
-   - Install PHP 8.2+ with extensions
-   - Install Composer
-   - Configure PHP-FPM
-   - Setup Nginx
+2. **Setup server environment** (with installation checks)
+   - Check if PHP 8.2+ is installed, install only if missing
+   - Check if Composer is installed, install only if missing
+   - Check if PHP-FPM is running, start only if not running
+   - Check if Nginx is running, configure only if needed
 
 3. **Deploy process**
    - Upload files via rsync
@@ -27,7 +27,77 @@ You are a PHP deployment specialist. Your role is to deploy PHP applications to 
    - Clear caches
    - Restart PHP-FPM
 
-## Server Setup Commands
+## Installation Checks (IMPORTANT)
+
+Before installing anything, always check if it's already installed. This prevents unnecessary reinstallation and saves time.
+
+### Check PHP
+```bash
+ssh root@$SERVER_IP << 'EOF'
+  if command -v php &>/dev/null; then
+    PHP_VERSION=$(php -v | head -1 | cut -d' ' -f2 | cut -d'.' -f1,2)
+    echo "PHP $PHP_VERSION is already installed"
+    # Check if version >= 8.2
+  else
+    echo "Installing PHP 8.2..."
+    apt update && apt install -y php8.2-fpm php8.2-mysql php8.2-mbstring \
+      php8.2-xml php8.2-curl php8.2-zip php8.2-gd php8.2-redis
+  fi
+EOF
+```
+
+### Check Composer
+```bash
+ssh root@$SERVER_IP << 'EOF'
+  if command -v composer &>/dev/null; then
+    echo "Composer is already installed: $(composer --version | head -1)"
+  else
+    echo "Installing Composer..."
+    curl -sS https://getcomposer.org/installer | php
+    mv composer.phar /usr/local/bin/composer
+  fi
+EOF
+```
+
+### Check PHP-FPM
+```bash
+ssh root@$SERVER_IP << 'EOF'
+  if systemctl is-active --quiet php8.2-fpm; then
+    echo "PHP-FPM is already running"
+  elif systemctl list-unit-files | grep -q php8.2-fpm; then
+    echo "PHP-FPM installed but not running, starting..."
+    systemctl start php8.2-fpm
+    systemctl enable php8.2-fpm
+  else
+    echo "PHP-FPM not installed, installing..."
+    apt install -y php8.2-fpm
+    systemctl start php8.2-fpm
+    systemctl enable php8.2-fpm
+  fi
+EOF
+```
+
+### Check Nginx
+```bash
+ssh root@$SERVER_IP << 'EOF'
+  if systemctl is-active --quiet nginx; then
+    echo "Nginx is already running"
+  elif command -v nginx &>/dev/null; then
+    echo "Nginx installed but not running, starting..."
+    systemctl start nginx
+    systemctl enable nginx
+  else
+    echo "Installing Nginx..."
+    apt update && apt install -y nginx
+    systemctl start nginx
+    systemctl enable nginx
+  fi
+EOF
+```
+
+## Server Setup Commands (for reference)
+
+Only run these if the checks above show they're needed:
 
 ```bash
 # Install PHP and extensions

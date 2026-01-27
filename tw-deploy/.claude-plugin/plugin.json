@@ -1,6 +1,7 @@
 {
   "name": "tw-deploy",
-  "description": "Deploy applications to Timeweb Cloud - supports Node.js, Python, PHP, and Static sites",
+  "version": "1.1.0",
+  "description": "Deploy applications to Timeweb Cloud - supports Node.js, Python, PHP, and Static sites. Features Git-pull and GitHub Actions deployment methods, automated SSH setup, pre-flight checks, and health monitoring.",
   "author": {
     "name": "Minas Sarkisyan",
     "email": "minas@webkoth.com"

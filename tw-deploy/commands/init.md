@@ -30,9 +30,17 @@ Create a `.deploy.yml` configuration file for the current project.
    - Port number
    - Required environment variables
 
-4. **Create `.deploy.yml`** with detected configuration
+4. **Ask user for deployment method**:
+   - `github-actions`: Deploy via GitHub Actions workflow (recommended)
+   - `git-pull`: Deploy via SSH + git pull on server
 
-5. **Ask user** for server IP and domain if not already configured
+5. **Create `.deploy.yml`** with detected configuration
+
+6. **Ask user** for server IP and domain if not already configured
+
+7. **Run setup commands** based on method:
+   - For `github-actions`: Suggest running `/tw-deploy:github-setup`
+   - For both: Suggest running `/tw-deploy:ssh-setup SERVER_IP`
 
 ## Example output
 
@@ -44,26 +52,36 @@ server: 77.232.136.239
 domain: example.com
 port: 3000
 
-# Git-based deployment
+# Deployment method: github-actions or git-pull
+deploy:
+  method: github-actions  # Recommended
+  # method: git-pull     # Alternative: SSH + git pull on server
+
+# Git configuration
 git:
   repo: git@github.com:user/my-app.git
   branch: main
   deploy_path: /var/www/my-app
 
+# SSH configuration
 ssh:
   user: root
-  password_env: SERVER_PASSWORD
+  # key: ~/.ssh/id_ed25519  # Uses default SSH key
 
+# Build configuration
 build:
   command: npm run build
 
+# Start configuration
 start:
   command: npm start
 
+# Environment variables (names only, values from env)
 env:
   - DATABASE_URL
   - NODE_ENV=production
 
+# PM2 configuration (for Node.js)
 pm2:
   name: my-app
   instances: 1
@@ -75,3 +93,12 @@ pm2:
 - Validate server connectivity if IP is provided
 - Ensure git remote is configured for git-based deploy
 - Check that MCP Timeweb is available for server management
+
+## Next Steps After Init
+
+After creating `.deploy.yml`, run these commands:
+
+1. **Setup SSH**: `/tw-deploy:ssh-setup SERVER_IP`
+2. **Run preflight checks**: `/tw-deploy:preflight`
+3. **For GitHub Actions method**: `/tw-deploy:github-setup`
+4. **Deploy**: `/tw-deploy:deploy`

@@ -9,7 +9,10 @@ A Claude Code plugin for deploying applications to [Timeweb Cloud](https://timew
 
 - **Multi-stack support**: Node.js/Next.js, Python (Django, FastAPI, Flask), PHP (Laravel, WordPress), Static sites
 - **Integrated with Timeweb Cloud**: Uses MCP for server management
-- **Git-based deployments**: Tag-based releases with instant rollback
+- **Two deployment methods**: Git-pull (SSH) or GitHub Actions
+- **Pre-flight checks**: Verify everything before deployment
+- **Automated SSH setup**: One command to configure SSH keys
+- **Health checks**: Automatic verification after deployment
 - **Simple commands**: `/tw-deploy`, `/tw-deploy:status`, `/tw-deploy:logs`
 - **Automated setup**: Configure servers, SSL certificates, databases
 
@@ -62,6 +65,10 @@ git clone https://github.com/webkoth/tw-deploy.git ~/.claude/plugins/tw-deploy
 |---------|-------------|
 | `/tw-deploy` | Deploy current project |
 | `/tw-deploy:init` | Initialize deployment config |
+| `/tw-deploy:preflight` | Run pre-deployment checks |
+| `/tw-deploy:ssh-setup` | Setup SSH key authentication |
+| `/tw-deploy:dns-setup` | Configure DNS records |
+| `/tw-deploy:github-setup` | Setup GitHub repo and Actions workflow |
 | `/tw-deploy:status` | Check application status |
 | `/tw-deploy:logs` | View application logs |
 | `/tw-deploy:rollback` | Rollback to previous version |
@@ -76,11 +83,24 @@ git clone https://github.com/webkoth/tw-deploy.git ~/.claude/plugins/tw-deploy
 /tw-deploy:init
 ```
 
-2. **Configure** `.deploy.yml` with your server details
-
-3. **Deploy**:
+2. **Setup SSH** for your server:
 ```bash
-/tw-deploy
+/tw-deploy:ssh-setup SERVER_IP
+```
+
+3. **Run preflight checks**:
+```bash
+/tw-deploy:preflight
+```
+
+4. **For GitHub Actions deployment** (optional):
+```bash
+/tw-deploy:github-setup
+```
+
+5. **Deploy**:
+```bash
+/tw-deploy:deploy
 ```
 
 ## Configuration
@@ -94,6 +114,10 @@ server: 77.232.136.239
 domain: example.com
 port: 3000
 
+# Deployment method
+deploy:
+  method: github-actions  # or git-pull
+
 git:
   repo: git@github.com:user/my-app.git
   branch: main
@@ -101,7 +125,7 @@ git:
 
 ssh:
   user: root
-  password_env: SERVER_PASSWORD
+  # Uses SSH key (configured via /tw-deploy:ssh-setup)
 
 build:
   command: npm run build
@@ -118,7 +142,29 @@ pm2:
   instances: 1
 ```
 
+### Deployment Methods
+
+- **github-actions**: Push triggers GitHub Actions workflow that deploys to server
+- **git-pull**: SSH to server, git pull, build and restart (direct deployment)
+
 ## Deployment Flow
+
+### Method 1: GitHub Actions (Recommended)
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Commit    │────▶│ Push to     │────▶│  GitHub     │
+│   Changes   │     │   GitHub    │     │  Actions    │
+└─────────────┘     └─────────────┘     └─────────────┘
+                                               │
+                                               ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Verify    │◀────│   Deploy    │◀────│   Build     │
+│   Health    │     │  via rsync  │     │  in CI      │
+└─────────────┘     └─────────────┘     └─────────────┘
+```
+
+### Method 2: Git Pull (Direct SSH)
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -129,15 +175,17 @@ pm2:
                                                ▼
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Verify    │◀────│   Restart   │◀────│    Build    │
-│   Health    │     │   App/PM2   │     │  & Install  │
+│   Health    │     │   App/PM2   │     │  on Server  │
 └─────────────┘     └─────────────┘     └─────────────┘
 ```
 
-1. **Commit** - All changes must be committed
-2. **Tag** - Create deployment tag `deploy-YYYYMMDD-HHMMSS`
+### Steps
+
+1. **Preflight** - Check SSH, env vars, server health
+2. **Commit** - All changes must be committed
 3. **Push** - Push to remote repository
-4. **Pull** - Server pulls latest from git
-5. **Build** - Run build command on server
+4. **Build** - Build locally (GitHub Actions) or on server (git-pull)
+5. **Deploy** - rsync files (GitHub Actions) or git pull (git-pull)
 6. **Restart** - Restart application via PM2/systemd
 7. **Verify** - Check application health
 
@@ -182,6 +230,10 @@ tw-deploy/
 ├── commands/                # Slash commands
 │   ├── deploy.md
 │   ├── init.md
+│   ├── preflight.md         # Pre-deployment checks
+│   ├── ssh-setup.md         # SSH key setup
+│   ├── dns-setup.md         # DNS configuration
+│   ├── github-setup.md      # GitHub Actions setup
 │   ├── status.md
 │   ├── logs.md
 │   ├── rollback.md
@@ -195,18 +247,28 @@ tw-deploy/
 │   ├── deploy-static.md
 │   └── deploy-validator.md
 ├── skills/                  # Setup skills
-│   ├── nodejs-setup/
-│   ├── python-setup/
-│   ├── php-setup/
 │   ├── nginx-config/
 │   ├── ssl-setup/
 │   └── database-setup/
 ├── templates/               # Config templates
 │   ├── nginx/
-│   └── systemd/
+│   ├── systemd/
+│   └── github/              # GitHub Actions workflow
+├── docs/
+│   └── TROUBLESHOOTING.md   # Common issues
 └── hooks/
     └── hooks.json
 ```
+
+## Troubleshooting
+
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues and solutions:
+- SSH Permission denied
+- TIMEWEB_CLOUD_TOKEN not set
+- SSL certificate errors
+- Application not starting
+- DNS issues
+- GitHub Actions problems
 
 ## Contributing
 
