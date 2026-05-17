@@ -1,0 +1,62 @@
+# Company / Position Profile — SCHEMA DOCUMENTATION (not valid YAML)
+#
+# This file documents the structure expected by /eval-prepare and /eval-grade.
+# It uses TypeScript-style type annotations (`string`, `0..5`, `"junior" | "middle"`)
+# and is NOT meant to be parsed as YAML. For a real, parseable example see:
+#   templates/company-profile.example.yaml
+#
+# Профиль разбивается на две части:
+#   - PUBLIC: контекст компании и задачи, безопасно показать кандидату
+#   - PRIVATE: веса категорий + критичные red/green flags, остаётся у HR
+
+profile:
+  # === PUBLIC SECTION ===
+  # Показывается кандидату в начале сессии (через consent + task)
+  public:
+    position:
+      title: string                  # "Senior Fullstack Developer"
+      level: "junior" | "middle" | "senior" | "lead"
+      stack: [string]                # ["TypeScript", "React", "Node.js", "Postgres"]
+      domain: string                 # "B2B SaaS for marketplaces"
+    company:
+      name: string                   # опц., можно скрыть до отказа от анонимности
+      size: "solo" | "small" | "medium" | "enterprise"
+      context: string                # 1-2 параграфа: что делаем, какие задачи приходят
+    interview:
+      format: "live" | "take-home" | "async-recorded"
+      duration_min: integer          # ожидаемое время на задачу
+      ai_allowed: boolean            # обычно true для этого скилла
+
+  # === PRIVATE SECTION ===
+  # НЕ показывается кандидату. Используется только при /eval-grade у HR.
+  private:
+    # Веса для 7 категорий. Сумма не обязана = 1; нормализуется в scoring.
+    weights:
+      promptcraft: float             # 0.0 .. 1.0
+      critical_reception: float
+      verification: float
+      debugging: float
+      architecture: float
+      environment: float
+      metacognition: float
+
+    # Критичные категории — если score ≤ critical_threshold, overall % ограничен.
+    critical:
+      - category: "verification" | "critical_reception" | ...
+        threshold: integer           # 0..5, обычно 1 или 2
+        cap_overall_pct: integer     # overall не превысит этого, default 40
+
+    # Custom green / red flags для этой роли — добавляются к базовой rubric.
+    custom_green_flags:
+      - signal: string               # "уточняет требования к API contract"
+        category: string             # к какой из 7 категорий относится
+        weight_multiplier: float     # 1.0 default; 1.5 если особенно важно
+
+    custom_red_flags:
+      - signal: string               # "генерит код без чтения существующего"
+        category: string
+        weight_multiplier: float
+
+    # Задание, которое HR сгенерировал. Сохраняется в private чтобы хеши совпали.
+    task_hash: string                # sha256 файла task.md (опц., anti-cheat)
+    notes: string                    # свободные заметки HR-а

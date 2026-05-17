@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "webkoth",
-  "description": "Deploy applications to Timeweb Cloud with simple commands",
+  "description": "Claude Code plugins by webkoth — deployment, marketplace APIs, developer evaluation",
   "owner": {
     "name": "Minas Sarkisyan",
     "email": "minas@webkoth.com"
@@ -30,6 +30,18 @@
       "source": "./hubmarket-api",
       "category": "documentation",
       "homepage": "https://github.com/webkoth/claude-code-plugins/tree/main/hubmarket-api"
+    },
+    {
+      "name": "hr-eval",
+      "description": "Evaluate developer candidates by how they think with an AI agent. Logs prompts, tool calls and edits during an interview session, then produces a structured report against 7 signals of developer thinking. HR generates a job-specific task from a JD; candidate runs the session transparently; LLM analyzer produces the report.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Minas Sarkisyan",
+        "email": "minas@webkoth.com"
+      },
+      "source": "./hr-eval",
+      "category": "hiring",
+      "homepage": "https://github.com/webkoth/claude-code-plugins/tree/main/hr-eval"
     }
   ]
 }
