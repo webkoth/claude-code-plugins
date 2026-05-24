@@ -1,23 +1,23 @@
 ---
 name: hr-eval
-description: Evaluate developer candidates by how they think with an AI agent during a transparent interview session. Triggers when the user is preparing or running a technical interview that uses Claude Code / Cursor, when asked to "оценить кандидата", "evaluate candidate", "interview a developer with AI", or when the user mentions terms like AI-assisted hiring, AI fluency assessment, или process-based interview scoring. Provides 5 slash commands (/eval-prepare, /eval-start, /eval-report, /eval-stop, /eval-grade) and a 7-signal cognition rubric.
+description: Live, fully transparent one-session technical interview assessment. HR and candidate on a video call together — candidate runs all commands on their machine, HR helps verbally, everyone sees the same task / weights / report. Triggers when the user is preparing or running a live technical interview that uses Claude Code, when asked to "оценить кандидата", "evaluate candidate", "interview a developer with AI", or when the user mentions terms like AI-assisted hiring, AI fluency assessment, transparent process-based interview scoring. Provides 4 slash commands (/eval-prepare, /eval-start, /eval-report, /eval-stop) and a 7-signal cognition rubric with inline weighted scoring.
 ---
 
-# hr-eval — Developer Cognition Assessment
+# hr-eval — Developer Cognition Assessment (Live, Transparent)
 
-Process-based assessment plugin. Logs candidate's interaction with Claude (prompts + tool calls + edits) during an interview and produces a structured report against 7 signals of developer thinking.
+Process-based assessment plugin for **live one-session** technical interviews where AI tools are allowed. Logs candidate's interaction with Claude (prompts + tool calls + edits) during the interview and produces a structured report against 7 signals of developer thinking — with weighted scoring + recommendation applied inline.
 
 ## When to use
 
-- **HR/manager** preparing a technical interview that allows AI tools: use `/eval-prepare` to generate a task and profile from a JD.
-- **Candidate** starting an AI-assisted interview: use `/eval-start` to begin a logged session with transparency notice.
-- **Candidate** finished interview: use `/eval-report` to generate the cognition report locally.
-- **HR** after receiving candidate's report: use `/eval-grade` to apply private weights + custom flags and compute final % fit.
-- Emergency abort: `/eval-stop`.
+- **Live technical interview** on a video call with screen share + recording, where the candidate uses Claude Code on their machine.
+- Candidate runs `/eval-prepare` (with HR's verbal input), then `/eval-start`, works the task, then `/eval-report`.
+- `/eval-stop` is the emergency abort.
+
+Everything happens on the candidate's screen with HR watching live.
 
 ## What it measures (7 categories)
 
-See `lib/rubric.md` for the full taxonomy. Scores 0..5 per category, with `null` allowed when signal is insufficient.
+See `lib/rubric.md` for the full taxonomy. Scores 0..5 per category, with `null` allowed when signal is insufficient. Weighted overall % and recommendation tier (STRONG HIRE / HIRE / NEEDS DEEPER INTERVIEW / NO HIRE) are computed in `/eval-report` using the `profile.yaml` generated in `/eval-prepare`.
 
 1. **Promptcraft** — quality and specificity of prompts
 2. **Critical Reception** — does the candidate verify / push back / accept blindly
@@ -36,26 +36,30 @@ See `lib/rubric.md` for the full taxonomy. Scores 0..5 per category, with `null`
 
 ## Architecture
 
-- `commands/` — 5 slash commands
+- `commands/` — 4 slash commands
 - `hooks/` — shell scripts that log prompts/tool calls (activated dynamically by `/eval-start`, NOT registered by default)
 - `lib/rubric.md` — taxonomy of 7 signals + cross-cutting anti-patterns
-- `lib/analyzer-prompt.md` — instruction for LLM to convert log → report
-- `lib/prepare-prompt.md` — instruction for LLM to convert JD → task + profile
+- `lib/analyzer-prompt.md` — instruction for LLM to convert log + profile → report
+- `lib/prepare-prompt.md` — instruction for LLM to convert JD + verbal HR answers → task + profile
 - `lib/consent-notice.md` — text shown to candidate before logging starts
-- `lib/profile-schema.yaml` — company profile structure (public + private parts)
+- `lib/profile-schema.yaml` — job profile structure (position, weights, custom flags)
 - `lib/INSIGHTS.md` — background research: market analogs + signal taxonomy sources
 - `templates/` — example profile + example task-bundle
 - `examples/sample-report.md` — example of a generated report
 
 ## Transparency principle
 
-Logging is **never silent**. `/eval-start` always shows the consent notice from `lib/consent-notice.md`. The candidate sees the final report before HR. Hooks are only active for the duration of an explicit session — installing the plugin does NOT enable logging on the user's machine.
+Logging is **fully transparent and visible to all participants in real time**. HR watches via screen share during the call. The candidate sees their own report appear on screen at the same moment as HR. Team lead / lead dev can audit the full `log.jsonl` after the call. Installing the plugin does NOT enable logging — hooks activate only inside an active `/eval-start` session.
+
+The `profile.yaml` (with weights, custom green/red flags, critical caps) is generated in front of the candidate during `/eval-prepare`. They see the same evaluation criteria as HR throughout the session.
 
 ## Storage
 
-- **HR side** (job-bundle): `~/.hr-eval/jobs/<job-slug>/` — task, setup, public+private profiles, SHARE.md
-- **Candidate side** (sessions): `<cwd>/.hr-eval/sessions/<session-id>/` — log.jsonl, task.md, meta.json, report.md
-- No remote upload, no telemetry. Reports are shared manually via email/gist/chat.
+- All session artefacts: `<cwd>/.hr-eval/sessions/<session-id>/`
+  - `task.md`, `setup.md`, `profile.yaml`, `meta.json`, `jd.txt` (from `/eval-prepare`)
+  - `log.jsonl` (accumulated during `/eval-start` → work)
+  - `report.md` and `<session-id>.zip` (from `/eval-report`)
+- No remote upload, no telemetry. The candidate hands the zip to HR via drag-and-drop in the call's chat.
 
 ## Research foundation
 

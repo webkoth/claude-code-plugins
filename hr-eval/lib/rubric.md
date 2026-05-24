@@ -26,7 +26,7 @@
 | 0 | Critical anti-pattern (e.g. отказался от верификации после прямого указания) |
 | null | Недостаточно сигналов в логе |
 
-**Overall % fit** = `Σ (score × weight) / Σ (weight × 5) × 100`, считая только категории с не-null score. Если красная категория критическая для компании (`critical: true` в profile) и score ≤ 1 — overall не превышает 40% независимо от других сигналов.
+**Overall % fit** = `Σ (score × weight) / Σ (weight × 5) × 100`, считая только категории с не-null score. Если красная категория критическая для роли (запись в `critical` блоке `profile.yaml`) и score ≤ `threshold` — overall ограничен по `cap_overall_pct`. Дефолтный cap при отсутствии явного profile — 40%. Все веса и custom flags видны кандидату через `profile.yaml`.
 
 ---
 
@@ -265,9 +265,13 @@
 
 - **Per-category scores** (0..5 или null) с обоснованием в 2-3 предложения и 2-3 цитатами из лога
 - **Cross-cutting anti-patterns** если встретились
-- **Overall % fit** (если приложен company-profile с весами)
+- **Weighted scoring** таблица + **Overall % fit** (применяя `profile.yaml` сессии — веса и custom flags видны кандидату)
+- **Custom flag matches** — какие custom green/red flags из profile сработали
+- **Critical caps applied** — какие критические категории зафиксировали потолок
 - **Top 3 green signals** — лучшие моменты сессии
 - **Top 3 red signals** — слабые места
-- **Recommendations** — что про этого кандидата стоит дополнительно проверить на интервью
+- **Recommendation** tier — STRONG HIRE / HIRE / NEEDS DEEPER INTERVIEW / NO HIRE
+- **What to probe in live follow-up** — что HR / team lead стоит дополнительно проверить
+- **Notes for the candidate** — конструктивная обратная связь, кандидат уходит со звонка с пониманием куда расти
 
-Каждый сигнал в отчёте ссылается на конкретный timestamp/строку лога — чтобы HR и кандидат могли вернуться к источнику.
+Каждый сигнал в отчёте ссылается на конкретный timestamp/строку лога — чтобы кандидат, HR и team lead при аудите могли вернуться к источнику.

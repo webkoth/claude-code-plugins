@@ -1,10 +1,23 @@
 # hr-eval
 
-> Evaluate developer candidates by how they think with an AI agent — not by whether tests pass.
+> Evaluate developer candidates by how they think with an AI agent — live, in one session, fully transparent.
 
-A Claude Code plugin for **process-based** technical assessments. Instead of grading the final artefact (did tests pass? did they ship?), `hr-eval` observes the candidate's **interaction with Claude** during the interview and scores it against a 7-signal taxonomy of developer cognition.
+A Claude Code plugin for **live, process-based** technical assessments. Instead of grading the final artefact (did tests pass? did they ship?), `hr-eval` observes the candidate's **interaction with Claude** during the interview and scores it against a 7-signal taxonomy of developer cognition — with HR watching the screen and the candidate seeing the same report.
 
 The premise (after Kirill Mokevnin's 50+ AI-assisted interviews in 2024–2025): when AI can solve algorithmic puzzles in a second, the interview is over before it began. The signal that matters now is **how a candidate thinks** when an AI agent is in the loop with them.
+
+## The model: live, one session, full transparency
+
+- HR and candidate on a video call. Candidate shares screen. Call is recorded.
+- Candidate installs the plugin on their own machine on the call.
+- `/eval-prepare` — candidate runs it; HR answers questions verbally; together they generate `task.md` + `profile.yaml` (weights + custom flags visible to both).
+- `/eval-start` — consent notice, hooks activate, task opens.
+- Candidate works with Claude. HR watches via screen share. Every prompt + tool call goes to `log.jsonl`.
+- `/eval-report` — analyzer reads the log, applies weights from `profile.yaml`, produces `report.md` with weighted scoring + recommendation. Everyone sees it simultaneously.
+- Candidate hands off the zip to HR via drag-and-drop in chat.
+- After the call: team lead / lead dev can audit the full log + report.
+
+Everything is on the table from minute one — task, weights, custom flags, log, report. Candidate, HR, and team lead see the same artefacts. This is the whole point of the plugin.
 
 ## What it scores (7 categories)
 
@@ -23,37 +36,36 @@ Full taxonomy with green/red signals: [`lib/rubric.md`](./lib/rubric.md). Resear
 ## How it works
 
 ```
-┌────────────────────────┐         ┌───────────────────────────┐
-│  HR (Claude Code)      │         │  Candidate (Claude Code)  │
-├────────────────────────┤         ├───────────────────────────┤
-│  /eval-prepare         │         │                           │
-│  ↓                     │         │                           │
-│  Reads JD, asks 3-5 Qs │         │                           │
-│  ↓                     │         │                           │
-│  Generates:            │         │                           │
-│  • task.md             │ ──────► │  /eval-start              │
-│  • profile-public.yaml │   send  │  ↓ shows consent notice   │
-│  • profile-private.yaml│         │  ↓ activates 3 hooks      │
-│  • SHARE.md            │         │  ↓ shows task             │
-│                        │         │  ↓                        │
-│                        │         │  Candidate works with     │
-│                        │         │  Claude as normal.        │
-│                        │         │  Every prompt, tool call, │
-│                        │         │  edit → JSONL log.        │
-│                        │         │  ↓                        │
-│                        │         │  /eval-report             │
-│                        │         │  ↓ snaps hooks            │
-│                        │         │  ↓ LLM analyzer reads log │
-│                        │         │  ↓ + rubric → report.md   │
-│                        │         │  ↓                        │
-│                        │ ◄────── │  Candidate sees report    │
-│                        │  share  │  FIRST. Sends to HR.      │
-│  /eval-grade           │         │                           │
-│  ↓ applies private     │         │                           │
-│  weights + custom flags│         │                           │
-│  ↓ computes % fit      │         │                           │
-│  ↓ recommendation      │         │                           │
-└────────────────────────┘         └───────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  Live call: HR + Candidate                           │
+│  Recording: ON                                       │
+│  Screen share: candidate's machine                   │
+├──────────────────────────────────────────────────────┤
+│                                                       │
+│   /plugin install hr-eval@webkoth                    │
+│   ↓                                                   │
+│   /eval-prepare                                      │
+│   ↓  candidate types, HR answers verbally            │
+│   ↓  → task.md + profile.yaml (weights visible)      │
+│   ↓                                                   │
+│   /eval-start                                        │
+│   ↓  consent notice (live transparency)              │
+│   ↓  hooks activate, task shown                      │
+│   ↓                                                   │
+│   Candidate works with Claude.                       │
+│   HR watches via screen share.                       │
+│   Every prompt + tool call → log.jsonl               │
+│   ↓                                                   │
+│   /eval-report                                       │
+│   ↓  analyzer → report.md (visible to all)           │
+│   ↓  weighted scoring + recommendation inline        │
+│   ↓  zip packaged, Finder opens                      │
+│   ↓                                                   │
+│   Candidate drag-and-drops zip to HR in chat         │
+│                                                       │
+└──────────────────────────────────────────────────────┘
+       ↓ after the call
+   Team lead / lead dev audits log.jsonl + report.md
 ```
 
 ## Install
@@ -65,21 +77,23 @@ Full taxonomy with green/red signals: [`lib/rubric.md`](./lib/rubric.md). Resear
 
 ## Commands
 
-| Command | Role | What it does |
+| Command | When | What it does |
 |---------|------|-------------|
-| `/eval-prepare` | HR | From a job description, generate task + public profile + private profile + paste-ready candidate message |
-| `/eval-start` | Candidate | Show transparency notice, activate logging hooks, open the task |
-| `/eval-report` | Candidate | Snap hooks, run LLM analyzer over the session log, produce report against the 7-signal rubric |
-| `/eval-stop` | Candidate | Abort the session without generating a report (always available) |
-| `/eval-grade` | HR | Apply the private profile (weights + custom flags) to a candidate report; compute final % fit + recommendation |
+| `/eval-prepare` | Start of call | Generate task + profile (weights, flags) from JD + HR's verbal answers. Mandatory first step. |
+| `/eval-start` | After prepare | Show consent notice, activate logging hooks, open the task |
+| `/eval-report` | End of work | Snap hooks, run LLM analyzer, produce report with weighted scoring + recommendation, package handoff zip |
+| `/eval-stop` | Anytime | Abort session without generating a report (files kept for audit) |
 
-## Transparency
+`/eval-report` supports `--report-only` flag to package only `report.md` instead of the full session bundle.
+
+## Transparency principle
 
 - The candidate sees a **consent notice** before any logging begins (see [`lib/consent-notice.md`](./lib/consent-notice.md)).
-- The plugin **does not log anything by default after install** — hooks activate only when `/eval-start` is run.
+- The plugin **does not log anything by default after install** — hooks activate only when `/eval-start` is run inside an active `/eval-prepare` session.
 - Logs are stored locally in `<cwd>/.hr-eval/sessions/<id>/` — no remote upload, no telemetry.
-- The candidate sees the final report **before** anyone else. They decide whether to share it with HR.
-- The `profile-private.yaml` with weights and red/green flags is **never** sent to the candidate — it stays with HR for `/eval-grade`.
+- The candidate sees the final report **at the same time as HR** (via screen share). There is no "candidate-first" buffer — this is a live transparent process.
+- `profile.yaml` with weights and custom red/green flags is **visible to the candidate** from the moment it's generated.
+- After the call, the full session log (`log.jsonl`) is available for **team lead / lead dev audit** — they can independently verify or challenge the assessment.
 
 ## What it does NOT do
 
@@ -99,7 +113,7 @@ Full taxonomy with green/red signals: [`lib/rubric.md`](./lib/rubric.md). Resear
 
 ## Niche
 
-After scanning the market in May 2026: CodeSignal, HackerRank, Karat, Mercor, Metaview, DevSkiller, Hatchways, Filtered, Cangrade — every existing platform still ultimately optimises for the artefact. They talk about "AI fluency" without an observable rubric. `hr-eval` is the first plugin to score the **interaction with the AI agent** as the primary signal, with anti-sycophancy and architecture-steering as first-class categories. See [`lib/INSIGHTS.md`](./lib/INSIGHTS.md) for the full scan.
+After scanning the market in May 2026: CodeSignal, HackerRank, Karat, Mercor, Metaview, DevSkiller, Hatchways, Filtered, Cangrade — every existing platform optimises for the artefact or operates as an async take-home. They talk about "AI fluency" without an observable rubric. `hr-eval` scores the **interaction with the AI agent** as the primary signal, with anti-sycophancy and architecture-steering as first-class categories — designed for live, transparent, one-session use where candidate and HR see the same evaluation criteria. See [`lib/INSIGHTS.md`](./lib/INSIGHTS.md) for the full scan.
 
 ## File map
 
@@ -107,12 +121,11 @@ After scanning the market in May 2026: CodeSignal, HackerRank, Karat, Mercor, Me
 hr-eval/
 ├── .claude-plugin/plugin.json    # plugin manifest
 ├── README.md                     # this file
-├── commands/                     # 5 slash commands
+├── commands/                     # 4 slash commands
 │   ├── eval-prepare.md
 │   ├── eval-start.md
 │   ├── eval-report.md
-│   ├── eval-stop.md
-│   └── eval-grade.md
+│   └── eval-stop.md
 ├── hooks/                        # session loggers (dynamically activated)
 │   ├── hooks.json                # intentionally empty; hooks not auto-registered
 │   ├── log-event.sh              # core logger
@@ -121,10 +134,10 @@ hr-eval/
 │   └── log-post-tool.sh          # PostToolUse wrapper
 ├── lib/
 │   ├── rubric.md                 # 7-signal taxonomy + anti-patterns
-│   ├── analyzer-prompt.md        # LLM instruction: log → report
-│   ├── prepare-prompt.md         # LLM instruction: JD → task + profile
+│   ├── analyzer-prompt.md        # LLM instruction: log + profile → report
+│   ├── prepare-prompt.md         # LLM instruction: JD + verbal HR → task + profile
 │   ├── consent-notice.md         # candidate transparency notice
-│   ├── profile-schema.yaml       # company profile structure
+│   ├── profile-schema.yaml       # job profile structure
 │   └── INSIGHTS.md               # research notes (market analogs + sources)
 ├── skills/hr-eval/
 │   └── SKILL.md                  # skill discovery entry-point
@@ -134,22 +147,21 @@ hr-eval/
 │       ├── task.md               # example assessment task
 │       └── setup.md
 └── examples/
-    └── sample-report.md          # example of generated report
+    └── sample-report.md          # example of generated report (with weighted scoring)
 ```
 
 ## Status
 
-**v0.1.0 — Working MVP.** Built for self-dogfooding first. Expect rough edges in:
+Working. Expect rough edges in:
 - JSON parsing of varied hook payload shapes (we trust Claude Code's contract; if it shifts, the logger gracefully no-ops rather than crashing)
 - Cross-platform shell scripts (developed on macOS; Linux should work; Windows users want WSL)
 - LLM analyzer report quality on very short or very long sessions
 
 ## Roadmap
 
-- v0.2: anti-sycophancy probes that HR can plant in `profile-private` (specific false premises to test if AI catches them — pass-through to scoring)
-- v0.2: batch `/eval-grade` for multiple candidates on one role
-- v0.3: optional anonymisation of session logs before sharing
-- v0.3: Cursor / Windsurf compatibility (via MCP server adapter)
+- Anti-sycophancy probes that HR can plant in `profile.yaml` (specific false premises to test if AI catches them — pass-through to scoring)
+- Optional log anonymisation before sharing with external recruiters
+- Cursor / Windsurf compatibility (via MCP server adapter)
 
 ## Author
 

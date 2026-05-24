@@ -1,62 +1,57 @@
-# Company / Position Profile — SCHEMA DOCUMENTATION (not valid YAML)
+# Job Profile — SCHEMA DOCUMENTATION (not valid YAML)
 #
-# This file documents the structure expected by /eval-prepare and /eval-grade.
+# This file documents the structure expected by /eval-prepare and /eval-report.
 # It uses TypeScript-style type annotations (`string`, `0..5`, `"junior" | "middle"`)
 # and is NOT meant to be parsed as YAML. For a real, parseable example see:
 #   templates/company-profile.example.yaml
 #
-# Профиль разбивается на две части:
-#   - PUBLIC: контекст компании и задачи, безопасно показать кандидату
-#   - PRIVATE: веса категорий + критичные red/green flags, остаётся у HR
+# The profile is shared with everyone on the call. Candidate sees
+# position/company/weights/flags before consenting and during work.
+# Team lead reviews the same file when auditing the session log later.
 
 profile:
-  # === PUBLIC SECTION ===
-  # Показывается кандидату в начале сессии (через consent + task)
-  public:
-    position:
-      title: string                  # "Senior Fullstack Developer"
-      level: "junior" | "middle" | "senior" | "lead"
-      stack: [string]                # ["TypeScript", "React", "Node.js", "Postgres"]
-      domain: string                 # "B2B SaaS for marketplaces"
-    company:
-      name: string                   # опц., можно скрыть до отказа от анонимности
-      size: "solo" | "small" | "medium" | "enterprise"
-      context: string                # 1-2 параграфа: что делаем, какие задачи приходят
-    interview:
-      format: "live" | "take-home" | "async-recorded"
-      duration_min: integer          # ожидаемое время на задачу
-      ai_allowed: boolean            # обычно true для этого скилла
+  position:
+    title: string                  # "Senior Fullstack Developer"
+    level: "junior" | "middle" | "senior" | "lead"
+    stack: [string]                # ["TypeScript", "React", "Node.js", "Postgres"]
+    domain: string                 # "B2B SaaS for marketplaces"
 
-  # === PRIVATE SECTION ===
-  # НЕ показывается кандидату. Используется только при /eval-grade у HR.
-  private:
-    # Веса для 7 категорий. Сумма не обязана = 1; нормализуется в scoring.
-    weights:
-      promptcraft: float             # 0.0 .. 1.0
-      critical_reception: float
-      verification: float
-      debugging: float
-      architecture: float
-      environment: float
-      metacognition: float
+  company:
+    name: string                   # optional
+    size: "solo" | "small" | "medium" | "enterprise"
+    context: string                # 1-2 sentences about the product / team
 
-    # Критичные категории — если score ≤ critical_threshold, overall % ограничен.
-    critical:
-      - category: "verification" | "critical_reception" | ...
-        threshold: integer           # 0..5, обычно 1 или 2
-        cap_overall_pct: integer     # overall не превысит этого, default 40
+  interview:
+    format: "live"                 # this plugin is live-only
+    duration_min: integer          # expected time for the task
+    ai_allowed: true               # always true for hr-eval
 
-    # Custom green / red flags для этой роли — добавляются к базовой rubric.
-    custom_green_flags:
-      - signal: string               # "уточняет требования к API contract"
-        category: string             # к какой из 7 категорий относится
-        weight_multiplier: float     # 1.0 default; 1.5 если особенно важно
+  # Weights for the 7 cognition categories. Sum need not = 1; normalized in scoring.
+  # Defaults to 1.0 each if /eval-prepare doesn't suggest changes.
+  weights:
+    promptcraft: float             # 0.0 .. 2.0 typical
+    critical_reception: float
+    verification: float
+    debugging: float
+    architecture: float
+    environment: float
+    metacognition: float
 
-    custom_red_flags:
-      - signal: string               # "генерит код без чтения существующего"
-        category: string
-        weight_multiplier: float
+  # Critical categories: if score ≤ threshold, overall % is capped.
+  critical:
+    - category: "verification" | "critical_reception" | ...
+      threshold: integer           # 0..5, typically 1 or 2
+      cap_overall_pct: integer     # overall won't exceed this; default 40
 
-    # Задание, которое HR сгенерировал. Сохраняется в private чтобы хеши совпали.
-    task_hash: string                # sha256 файла task.md (опц., anti-cheat)
-    notes: string                    # свободные заметки HR-а
+  # Custom green / red flags tailored to this role. Added to base rubric.
+  custom_green_flags:
+    - signal: string               # "asks AI to write a failing test before fix"
+      category: string             # one of the 7 categories
+      weight_multiplier: float     # 1.0 default; 1.5+ if especially important
+
+  custom_red_flags:
+    - signal: string               # "imports a library AI suggested without checking"
+      category: string
+      weight_multiplier: float
+
+  notes: string                    # free-form context (also visible to candidate)

@@ -1,7 +1,7 @@
 {
   "name": "hr-eval",
-  "version": "0.1.0",
-  "description": "Evaluate developer candidates by observing how they think with an AI agent. Logs every prompt, tool call, and edit during an interview session, then produces a structured report against 7 signals of developer thinking (promptcraft, critical reception, verification, debugging methodology, architecture steering, environment & tooling, metacognition). HR generates job-specific tasks + profile from a JD; candidate runs /eval-start to begin a transparent, logged session; /eval-report produces the analysis.",
+  "version": "0.2.0",
+  "description": "Live, transparent one-session technical interview assessment. HR and candidate on a video call, candidate shares screen, generates task + profile + report all in front of HR. Logs every prompt, tool call, and edit during the interview, then produces a structured report against 7 signals of developer thinking (promptcraft, critical reception, verification, debugging methodology, architecture steering, environment & tooling, metacognition) with weighted scoring + recommendation tier applied inline. 4 commands: /eval-prepare (task + profile), /eval-start (consent + hooks + task), /eval-report (analyzer + scoring + handoff zip), /eval-stop (abort).",
   "author": {
     "name": "Minas Sarkisyan",
     "email": "minas@webkoth.com"

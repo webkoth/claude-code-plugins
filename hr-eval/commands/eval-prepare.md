@@ -1,55 +1,48 @@
 ---
-description: HR command. Generate a candidate task + evaluation profile from a job description.
+description: Generate task + transparent evaluation profile at the start of a live interview call. Run by candidate, with HR's verbal guidance.
 allowed-tools: Read, Write, Bash, Glob
 ---
 
-# /eval-prepare — Generate Task & Profile from JD
+# /eval-prepare — Generate Task & Profile (live, in front of HR)
 
-Используется **HR-ом** (или нанимающим руководителем) до собеседования. Из текста JD генерирует:
+Запускается **кандидатом** на своей машине в начале live-собеседования. HR сидит на звонке, видит экран, помогает голосом отвечать на вопросы. Никакого профиля HR заранее не готовит — всё происходит здесь, прозрачно.
 
-- `task.md` — задание для кандидата (public, paste-ready)
-- `setup.md` — инструкция по setup среды (public)
-- `profile-public.yaml` — открытая часть профиля (передаётся кандидату)
-- `profile-private.yaml` — приватная часть с весами категорий, custom red/green flags (остаётся у HR-а)
-- `SHARE.md` — paste-ready сообщение для кандидата
+Из JD + 3-5 устных ответов HR-а генерирует:
+
+- `task.md` — задание для кандидата
+- `setup.md` — инструкция по setup среды
+- `profile.yaml` — один плоский профиль (position + company + weights + custom flags + notes), **виден кандидату**
+- `meta.json` — session metadata, `status: prepared`
 - `jd.txt` — оригинальный JD для аудита
 
-Всё кладётся в `~/.hr-eval/jobs/<job-slug>/`.
+Всё кладётся в `<cwd>/.hr-eval/sessions/<session-id>/`. `/eval-start` дальше подхватит эту prepared-сессию.
 
 ## Process
 
-1. **Спроси у HR-а JD.** Один из двух форматов:
-   - Inline paste (HR вставляет текст в сообщение)
-   - Path к файлу: HR говорит "из файла ~/Desktop/jd.md"
+1. **Получи JD.**
+   - HR может прислать в чат звонка → кандидат paste'ит
+   - Или path к локальному файлу
+   - Или HR диктует голосом — кандидат пишет
 
-2. **Прочитай и разбери JD** по полям:
-   - position title, level
-   - tech stack
-   - domain
-   - тип задач
-   - team size (если упомянут)
+2. **Прочитай и разбери JD** (position, level, stack, domain, тип задач — см. `${CLAUDE_PLUGIN_ROOT}/lib/prepare-prompt.md` шаг 1).
 
-3. **Задай 3-5 уточняющих вопросов HR-у** (см. полный список в `${CLAUDE_PLUGIN_ROOT}/lib/prepare-prompt.md`, секция "Шаг 2"). Используй AskUserQuestion tool с 1-3 questions за раз. Не задавай вопросы про вещи, которые уже явно есть в JD.
+3. **Задай 3-5 уточняющих вопросов вслух** через AskUserQuestion (1-3 за раз). Кандидат пересказывает HR голосом, HR отвечает, кандидат вписывает. Полный список в `${CLAUDE_PLUGIN_ROOT}/lib/prepare-prompt.md` шаг 2.
 
-4. **Сгенерируй артефакты** по шаблону в `${CLAUDE_PLUGIN_ROOT}/lib/prepare-prompt.md` (секция "Шаг 3"). Принципы дизайна задания строго соблюдай.
+4. **Сгенерируй артефакты** по шаблону в `${CLAUDE_PLUGIN_ROOT}/lib/prepare-prompt.md` шаг 3. Принципы дизайна задания соблюдай строго.
 
-5. **Сохрани в `~/.hr-eval/jobs/<job-slug>/`** где slug — kebab-case из title.
+5. **Сгенерируй session-id и сохрани в `<cwd>/.hr-eval/sessions/<session-id>/`:**
+   - `session-id` = `<YYYYMMDD-HHMMSS>-<short-uuid>` (`date +%Y%m%d-%H%M%S` + `uuidgen | head -c 8`)
+   - Файлы: `task.md`, `setup.md`, `profile.yaml`, `meta.json` (status: "prepared"), `jd.txt`
 
-6. **Покажи HR-у:**
-   - Что сгенерировано (список файлов)
-   - Путь к папке
-   - Preview SHARE.md (paste-ready, готово отправлять кандидату)
-   - Спроси: всё ок или нужны правки?
-
-## Methodology reference
-
-Полная методология генерации — в `${CLAUDE_PLUGIN_ROOT}/lib/prepare-prompt.md`. Прочитай его и rubric.md перед началом работы — они описывают:
-- Что считается хорошим заданием (anti-algorithmic, ambiguity by design, hallucination trap, possibility of overengineering)
-- Как выводить веса 7 категорий из JD и ответов HR-а
-- Структуру profile-public/private
+6. **Покажи кандидату + HR-у:**
+   - Список созданных файлов и абсолютный путь к session-папке
+   - Полный `task.md` (HR подтверждает голосом что окей)
+   - Предложенные веса с однострочным обоснованием на каждый — HR подтверждает или корректирует голосом
+   - Следующий шаг: `/eval-start` (он подхватит prepared-сессию автоматически)
 
 ## Notes
 
-- Если папка `~/.hr-eval/jobs/<slug>/` уже существует — спроси HR-а: overwrite или новый slug?
-- В `task.md` НЕ должно быть имени реальных клиентов, секретов, IP компании
-- Веса в `profile-private.yaml` дефолтятся к 1.0; модифицируешь только если есть основания из JD/ответов HR-а
+- В `task.md`, `notes`, `profile.yaml` НЕ должно быть имён реальных клиентов, секретов, IP компании.
+- Веса по умолчанию = 1.0; модифицируешь только если есть основания из JD/ответов HR-а (правила в `prepare-prompt.md`).
+- Если в `<cwd>/.hr-eval/sessions/` уже есть session со status `prepared` без последующего `/eval-start` — спроси: использовать ту или создать новую.
+- Это **обязательный** первый шаг. `/eval-start` без prepared-сессии откажется стартовать — это часть transparency контракта (кандидат должен видеть task + веса до того как hooks активируются).

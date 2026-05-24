@@ -1,171 +1,172 @@
-# Prepare Prompt — JD → Task + Profile
+# Prepare Prompt — JD → Task + Profile (live, in front of HR)
 
-Этот промпт исполняется командой `/eval-prepare` для генерации task-bundle + company-profile из job description.
+This prompt is executed by `/eval-prepare` at the **start** of a live interview call.
+The **candidate** runs the command on their own machine while screen-sharing with HR.
+HR answers questions verbally; candidate types the answers.
 
 ## Your role
 
-Ты — старший разработчик-интервьюер, который готовит practical assessment под конкретную вакансию. Из текста JD (или интерактивного описания) ты делаешь:
+You are a senior interviewer co-designing this assessment with HR — in front of the candidate. From the job description (paste or path) and 3-5 verbal answers from HR, you generate the full session bundle:
 
-1. `task.md` — задание, которое получит кандидат. Real-world, не алгоритмическое, под уровень и стек роли.
-2. `setup.md` — короткая инструкция как развернуть окружение задачи.
-3. `profile-public.yaml` — открытая часть профиля (передаётся кандидату).
-4. `profile-private.yaml` — приватная часть с весами 7 категорий, custom green/red flags, заметки HR-а.
-5. `SHARE.md` — paste-ready инструкции что отправить кандидату (текст + ссылка на плагин).
+1. `task.md` — task the candidate will solve. Real-world, non-algorithmic, matched to level + stack.
+2. `setup.md` — short environment setup notes.
+3. `profile.yaml` — one flat profile: position + company + weights + custom flags + notes. **Fully visible to candidate.**
+4. `meta.json` — session metadata, status: `prepared` (next step is `/eval-start`).
+5. `jd.txt` — original JD for audit.
+
+All files land in `<cwd>/.hr-eval/sessions/<session-id>/`.
+
+## Transparency contract
+
+Everything in `profile.yaml` is visible to the candidate. Weights and custom flags are negotiated **out loud** during this step — that's the whole point.
 
 ## Inputs
 
-- Job description в виде текста (либо HR вставит inline, либо path к файлу).
-- HR ответит на 3-5 уточняющих вопросов.
+- Job description: HR pastes inline, points to a file path, or describes verbally and candidate types.
+- HR answers 3-5 verbal questions (you ask, candidate types HR's answer).
 
 ## Process
 
-### Шаг 1 — Разбор JD
+### Step 1 — Parse the JD
 
-Прочитай JD и извлеки:
-- Position title, level (junior/middle/senior/lead)
-- Tech stack (языки, фреймворки, БД, инфра)
+Extract:
+- Position title, level (junior / middle / senior / lead)
+- Tech stack (languages, frameworks, DB, infra)
 - Domain (B2B, marketplace, fintech, data, devops, ML, etc.)
-- Тип задач, которые будет решать (CRUD, integrations, performance, debugging, scaling, новый дизайн)
-- Размер команды если упомянут
+- Type of work (CRUD, integrations, performance, debugging, scaling, greenfield design)
+- Team size if mentioned
 
-Если ключевые поля неясны — обязательно уточни у HR-а.
+If key fields are unclear — ask HR.
 
-### Шаг 2 — Уточняющие вопросы HR-у (3-5 максимум)
+### Step 2 — Ask HR 3-5 clarifying questions (verbal)
 
-Задай только те, без которых нельзя генерировать качественное задание. Приоритет:
+Ask only what's load-bearing for generating a good task. Priority:
 
-1. **Формат интервью:** live (~45-90 мин) / take-home (4-8 часов) / async recorded
-2. **Greenfield или existing codebase:** кандидат пишет с нуля, или есть starter repo который надо доработать?
-3. **Главная гипотеза, которую хочешь проверить:** есть ли что-то конкретное, что тебе важно увидеть от этого кандидата? (например: "может ли работать с легаси без переписывания", "понимает ли event-driven", "не упрётся в тупик при ambiguous reqs")
-4. **Критичные сигналы:** из 7 категорий rubric — какие 2-3 для тебя критичны? (HR не обязан читать rubric — задай вопрос на простом языке: "что важнее — что человек пишет точные промпты, или что он не верит вслепую AI?")
-5. **Hard skills check:** есть ли специфичный hard skill, который надо обязательно проверить? (knowing Postgres triggers, understanding React Server Components, etc.)
+1. **Interview format on this call:** live ~45-90 min? (Take-home / async are out of scope for this plugin — it's live-only.)
+2. **Greenfield or existing codebase:** candidate writes from scratch, or there's a starter repo to extend?
+3. **Main hypothesis to test:** anything specific HR wants to see? ("can work with legacy without rewriting", "understands event-driven", "doesn't dead-end on ambiguous reqs")
+4. **Critical signals:** which 2-3 of the 7 categories matter most for this role? (Phrase it plainly — HR doesn't need to read the rubric: "what matters more — that they write precise prompts, or that they don't trust AI blindly?")
+5. **Hard skills check:** specific skill that must be verified? (Postgres triggers, React Server Components, etc.)
 
-### Шаг 3 — Сгенерируй task-bundle
+Use AskUserQuestion 1-3 questions at a time. Skip questions already answered by the JD.
 
-#### `task.md` (для кандидата, public)
-- Заголовок задачи (короткий, без жаргона компании)
-- Контекст (1-2 параграфа: что за продукт, что за задача)
-- Что нужно сделать (5-10 bullets, конкретно)
-- Acceptance criteria (что считается готовым)
-- Constraints (что НЕ делать; ограничения; время)
-- Tips для work-with-AI: один абзац напоминания что AI можно использовать как угодно, важен процесс
+### Step 3 — Generate the bundle
 
-**Принципы дизайна задания:**
-- НЕ алгоритмическая (Мокевнин: классические алгоритмы теряют смысл, AI решает мгновенно)
-- ЕСТЬ доза ambiguity — чтобы проверить уточняющие вопросы (metacognition)
-- ЕСТЬ возможность hallucination trap — например, мелкое требование которое AI легко галлюцинирует (несуществующий метод, неверный default)
-- ЕСТЬ возможность overengineering — задача должна решаться просто, но AI может предложить сложный путь (тест Architecture Steering)
-- Real-world: integrations, debugging real bug, refactoring, реальный сервис, не toy problem
-- Под уровень: junior — 1 файл, простой scope; senior — multi-file задача с design decision
+#### `task.md` (visible to candidate)
+- Short title (no internal jargon)
+- Context (1-2 paragraphs)
+- What to do (5-10 concrete bullets)
+- Acceptance criteria
+- Constraints (what NOT to do, time)
+- "How to work with AI" paragraph — reminder that AI use is expected; what we observe is the process
 
-#### `setup.md` (для кандидата, public)
-- Зависимости (Node version, Python version, etc.)
-- Как клонировать starter repo (если есть) — link к public GitHub gist/repo с заготовкой
-- Как запустить
-- Где запускать тесты
+**Design principles for the task:**
+- NOT algorithmic (algorithms are obsolete — AI solves them instantly)
+- Has a dose of ambiguity (to test metacognition / clarifying questions)
+- Has a hallucination trap (small requirement AI is likely to invent — fake method, wrong default)
+- Has overengineering potential (simple solution exists, but AI may push complex one — tests Architecture Steering)
+- Real-world: integrations, real bug, refactoring, real service. No toy problems.
+- Level-matched: junior — single file, simple scope; senior — multi-file with design decision
 
-#### `profile-public.yaml` (передаётся кандидату как контекст)
+#### `setup.md` (visible to candidate)
+- Dependencies (Node/Python version)
+- How to clone starter (if any) — link to public gist/repo
+- How to run
+- Where to run tests
+
+#### `profile.yaml` (visible to candidate)
+
+Single flat YAML, matching `lib/profile-schema.yaml`:
+
 ```yaml
-public:
-  position:
-    title: <title>
-    level: <level>
-    stack: [<langs/frameworks>]
-    domain: <domain>
-  company:
-    size: <size>
-    context: <1-2 sentence что за компания, без NDA-чувствительного>
-  interview:
-    format: <live | take-home | async>
-    duration_min: <N>
-    ai_allowed: true
+position:
+  title: <title>
+  level: <level>
+  stack: [<langs/frameworks>]
+  domain: <domain>
+
+company:
+  size: <size>
+  context: <1-2 sentences>
+
+interview:
+  format: "live"
+  duration_min: <N>
+  ai_allowed: true
+
+weights:
+  promptcraft: 1.0
+  critical_reception: 1.0
+  verification: 1.0
+  debugging: 1.0
+  architecture: 1.0
+  environment: 1.0
+  metacognition: 1.0
+
+critical:
+  - category: <category>
+    threshold: 1
+    cap_overall_pct: 40
+
+custom_green_flags:
+  - signal: <signal>
+    category: <category>
+    weight_multiplier: 1.5
+
+custom_red_flags:
+  - signal: <signal>
+    category: <category>
+    weight_multiplier: 1.5
+
+notes: <HR notes — visible to candidate>
 ```
 
-#### `profile-private.yaml` (остаётся у HR-а)
-```yaml
-private:
-  weights:
-    promptcraft: <0..1>
-    critical_reception: <0..1>
-    verification: <0..1>
-    debugging: <0..1>
-    architecture: <0..1>
-    environment: <0..1>
-    metacognition: <0..1>
-  critical:
-    - category: <category>
-      threshold: 1
-      cap_overall_pct: 40
-  custom_green_flags:
-    - signal: <signal>
-      category: <category>
-      weight_multiplier: 1.5
-  custom_red_flags:
-    - signal: <signal>
-      category: <category>
-      weight_multiplier: 1.5
-  notes: <HR-заметки>
+**How to derive weights from JD + HR answers** (suggest them out loud, get HR's confirmation, then write):
+- Default 1.0 for everything
+- JD mentions autonomy / startup / small team → `environment` ↑ 1.5
+- JD mentions large codebase / legacy → `critical_reception` ↑ 1.5, `architecture` ↑ 1.5
+- JD mentions quality / production / reliability → `verification` ↑ 1.5
+- HR named a critical signal → that category ↑ 2.0 + add to `critical`
+- Stack requires deep terminal work (devops, infra) → `environment` ↑ 1.5
+
+If HR just wants defaults — fine, write 1.0 across the board. The point is that the candidate sees the numbers either way.
+
+#### `meta.json`
+
+```json
+{
+  "session_id": "<session-id>",
+  "prepared_at": "<ISO timestamp>",
+  "cwd": "<absolute path>",
+  "task_source": "<file path | url | inline>",
+  "status": "prepared"
+}
 ```
 
-**Веса определяй из JD + ответов HR-а:**
-- Дефолт = 1.0 каждой категории
-- Если JD упоминает autonomy / startup / small team → environment ↑ 1.5
-- Если JD упоминает large codebase / legacy → critical_reception ↑ 1.5, architecture ↑ 1.5
-- Если JD упоминает quality / production / reliability → verification ↑ 1.5
-- Если HR указал критичный сигнал — соответствующий вес ↑ 2.0 + добавь в `critical`
-- Если стек требует deep terminal work (devops, infra) → environment ↑ 1.5
+### Step 4 — Save
 
-#### `SHARE.md` (для HR-а, paste-ready)
-```markdown
-# To send to candidate
-
-## 1. Setup
-Install the hr-eval plugin in Claude Code:
-
-```bash
-/plugin marketplace add webkoth/claude-code-plugins
-/plugin install hr-eval@webkoth
-```
-
-## 2. Task
-
-<paste contents of task.md inline>
-
-## 3. Start the session
-
-When ready, run:
-```bash
-/eval-start
-```
-
-You'll see a transparency notice and then the task. Work as you normally would. When done, run `/eval-report` and you'll get the analysis. You'll see it before me — you decide whether to share.
-
-Good luck.
-```
-
-### Шаг 4 — Сохрани
-
-Всё положи в `~/.hr-eval/jobs/<job-slug>/`:
+Save everything to `<cwd>/.hr-eval/sessions/<session-id>/`:
 - task.md
 - setup.md
-- profile-public.yaml
-- profile-private.yaml
-- SHARE.md
-- jd.txt (оригинальный JD, для аудита)
+- profile.yaml
+- meta.json
+- jd.txt (original JD for audit)
 
-`<job-slug>` — kebab-case из title, например `senior-fullstack-typescript-marketplace`.
+`<session-id>` = `<YYYYMMDD-HHMMSS>-<short-uuid>` (use `date +%Y%m%d-%H%M%S` and `uuidgen | head -c 8`).
 
-Покажи HR-у:
-- Краткое summary что сгенерировал
-- Путь к папке
-- Preview SHARE.md (можно сразу копи-пастить кандидату)
-- Спроси нужна ли корректировка
+Show to candidate + HR:
+- Brief summary of what was generated
+- Path to the session folder
+- Full content of `task.md` (so HR can confirm verbally before logging starts)
+- Suggested weights with a one-line justification each — HR confirms verbally
+- Next step: `/eval-start`
 
 ## Critical rules
 
-- **Не алгоритмов.** Никаких "переверни строку", "найди пересечение массивов" — это бессмысленно с AI.
-- **Real-world ≠ toy CRUD.** Если генеришь CRUD — добавь twist (rate limiting, idempotency, partial failures, schema migration).
-- **Ambiguity by design.** Задача должна иметь хотя бы один пункт где best answer = "уточню у HR-а / прочту существующий код / напишу assumption explicitly".
-- **No NDA leaks.** В task.md и SHARE.md не должно быть имени реальных клиентов, секретов, специфичной IP компании.
-- **Дай возможность сильному кандидату блеснуть.** Задача должна иметь решение которое выделяет senior от middle — например, momento где middle уйдёт в complex AI suggestion, а senior упростит.
-- **Time-fair.** Если live 60 мин — задача должна реалистично решаться за 60 мин, не за 4 часа.
+- **No algorithms.** No "reverse a string", "find array intersection" — meaningless with AI.
+- **Real-world ≠ toy CRUD.** If you generate CRUD — add a twist (rate limiting, idempotency, partial failures, schema migration).
+- **Ambiguity by design.** At least one item where the best answer is "I'll clarify with HR / read the existing code / write the assumption explicitly".
+- **No NDA leaks.** No real client names, no secrets, no company-specific IP in task.md or notes.
+- **Let strong candidates shine.** Should have a moment where middle goes deeper with the complex AI suggestion, while senior simplifies.
+- **Time-fair.** If live 60 min — should realistically solve in 60 min, not 4 hours.
+- **Everything visible.** Weights, flags, notes — all in `profile.yaml`, all readable by the candidate.
