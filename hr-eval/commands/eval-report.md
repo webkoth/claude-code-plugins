@@ -30,15 +30,32 @@ HR смотрит на экран через screen share — отчёт поя�
 3. **Обнови meta.**
    - `status: "completed"`, `ended_at: <ISO>`
 
-4. **Проанализируй log.**
+4. **Integrity check.**
+   - Прочитай `meta.json`, возьми `task_sha256` и `profile_sha256`.
+   - Пересчитай хеши файлов сейчас:
+     ```bash
+     shasum -a 256 .hr-eval/sessions/<id>/task.md | awk '{print $1}'
+     shasum -a 256 .hr-eval/sessions/<id>/profile.yaml | awk '{print $1}'
+     ```
+   - Сравни с сохранёнными. Если хоть один не совпал — установи флаг `integrity_violation: true` и сохрани детали (`task_modified` / `profile_modified`) для передачи в analyzer.
+   - Сессия **не отказывается** идти — отчёт всё равно генерируется, но в нём будет прозрачный INTEGRITY WARNING блок наверху (см. analyzer-prompt.md).
+
+5. **Scan sibling sessions** в той же `<cwd>/.hr-eval/sessions/`:
+   - `ls -t .hr-eval/sessions/*/meta.json` — найди все meta.json в cwd
+   - Для каждой собери `(session_id, status, prepared_at, ended_at)`
+   - Текущую сессию исключи. Остальные — список "previous attempts" с их статусами для передачи в analyzer.
+   - Если есть >0 sibling сессий (особенно со status `aborted`) — это retry pattern, обязательно подсветить в отчёте.
+
+6. **Проанализируй log.**
    - Прочитай `${CLAUDE_PLUGIN_ROOT}/lib/analyzer-prompt.md` — твоя инструкция
    - Прочитай `${CLAUDE_PLUGIN_ROOT}/lib/rubric.md` — таксономия 7 категорий
    - Прочитай `.hr-eval/sessions/<session-id>/log.jsonl` целиком
    - Прочитай `.hr-eval/sessions/<session-id>/task.md`
    - Прочитай `.hr-eval/sessions/<session-id>/profile.yaml` — для весов, critical caps, custom flags
    - Если `profile.yaml` отсутствует — дефолтные веса 1.0 ко всем категориям, пометь "no profile applied"
+   - **Передай в analyzer** integrity result из шага 4 и sibling sessions list из шага 5 — они обязаны попасть в отчёт.
 
-5. **Сгенерируй report по структуре из analyzer-prompt.md.**
+7. **Сгенерируй report по структуре из analyzer-prompt.md.**
 
    Критические правила (повтор):
    - Только цитаты из лога с timestamps
@@ -47,11 +64,13 @@ HR смотрит на экран через screen share — отчёт поя�
    - Не суди финальный код
    - Тон конструктивный — кандидат, HR и потом team lead будут это читать
    - Подсвети anti-sycophancy моменты если были
-   - Включи Weighted scoring таблицу + Custom flag matches + Critical caps + Overall % + Recommendation tier inline (не отдельным шагом)
+   - Включи Weighted scoring таблицу + Custom flag matches + Critical caps + Overall % + Recommendation tier inline
+   - Если `integrity_violation: true` — INTEGRITY WARNING блок наверху отчёта (сразу после metadata)
+   - Если есть sibling sessions — Session attempts блок (см. analyzer-prompt.md report structure)
 
-6. **Сохрани в `.hr-eval/sessions/<session-id>/report.md`** и **покажи полный текст отчёта inline** — HR видит через screen share одновременно с кандидатом.
+8. **Сохрани в `.hr-eval/sessions/<session-id>/report.md`** и **покажи полный текст отчёта inline** — HR видит через screen share одновременно с кандидатом.
 
-7. **Упакуй handoff.**
+9. **Упакуй handoff.**
 
    По умолчанию (без `--report-only`):
    ```bash
@@ -69,7 +88,7 @@ HR смотрит на экран через screen share — отчёт поя�
 
    Скажи кандидату: "Папка открыта в Finder. Перетащи zip (или report.md) в чат звонка / Telegram / email HR-у."
 
-8. **Подскажи как удалить плагин.**
+10. **Подскажи как удалить плагин.**
 
    После того как пакет ушёл HR, плагин больше не нужен. Скажи кандидату:
 

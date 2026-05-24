@@ -33,6 +33,12 @@ allowed-tools: Read, Write, Bash, Glob
 5. **Сгенерируй session-id и сохрани в `<cwd>/.hr-eval/sessions/<session-id>/`:**
    - `session-id` = `<YYYYMMDD-HHMMSS>-<short-uuid>` (`date +%Y%m%d-%H%M%S` + `uuidgen | head -c 8`)
    - Файлы: `task.md`, `setup.md`, `profile.yaml`, `meta.json` (status: "prepared"), `jd.txt`
+   - **После записи task.md и profile.yaml** — посчитай SHA-256 каждого:
+     ```bash
+     shasum -a 256 .hr-eval/sessions/<id>/task.md | awk '{print $1}'
+     shasum -a 256 .hr-eval/sessions/<id>/profile.yaml | awk '{print $1}'
+     ```
+     И запиши оба хеша в `meta.json` как `task_sha256` и `profile_sha256`. Это integrity-check — `/eval-report` сверит хеши и если кто-то изменил файлы после prepare, отчёт получит integrity warning.
 
 6. **Покажи кандидату + HR-у:**
    - Список созданных файлов и абсолютный путь к session-папке

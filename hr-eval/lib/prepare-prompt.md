@@ -139,8 +139,17 @@ If HR just wants defaults — fine, write 1.0 across the board. The point is tha
   "prepared_at": "<ISO timestamp>",
   "cwd": "<absolute path>",
   "task_source": "<file path | url | inline>",
-  "status": "prepared"
+  "status": "prepared",
+  "task_sha256": "<SHA-256 of task.md>",
+  "profile_sha256": "<SHA-256 of profile.yaml>"
 }
+```
+
+The two `*_sha256` fields are an integrity anchor. `/eval-report` recomputes the hashes at the end of the session and surfaces an INTEGRITY WARNING in the report if either file has been modified between prepare and report. This is part of the transparency contract — task and weights are fixed at the moment of consent, and any change to them after that point is visible to everyone.
+
+Compute hashes with:
+```bash
+shasum -a 256 <path> | awk '{print $1}'
 ```
 
 ### Step 4 — Save
