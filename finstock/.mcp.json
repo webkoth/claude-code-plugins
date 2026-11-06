@@ -1,0 +1,9 @@
+{
+  "finstock": {
+    "type": "http",
+    "url": "${FINSTOCK_MCP_URL:-https://finstock.hubmarket.ru/api/mcp}",
+    "headers": {
+      "Authorization": "Bearer ${FINSTOCK_TOKEN}"
+    }
+  }
+}

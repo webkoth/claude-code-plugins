@@ -1,0 +1,10 @@
+{
+  "name": "finstock",
+  "version": "1.0.0",
+  "description": "Складской и финансовый учёт finstock для Claude Code: ручки MCP и правила работы с ними",
+  "author": {
+    "name": "Minas Sarkisyan",
+    "email": "minas@webkoth.com"
+  },
+  "skills": "./skills/"
+}

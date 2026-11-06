@@ -42,6 +42,18 @@
       "source": "./hr-eval",
       "category": "hiring",
       "homepage": "https://github.com/webkoth/claude-code-plugins/tree/main/hr-eval"
+    },
+    {
+      "name": "finstock",
+      "description": "Складской и финансовый учёт finstock для Claude Code: ручки MCP и правила работы с ними",
+      "version": "1.0.0",
+      "author": {
+        "name": "Minas Sarkisyan",
+        "email": "minas@webkoth.com"
+      },
+      "source": "./finstock",
+      "category": "productivity",
+      "homepage": "https://github.com/webkoth/claude-code-plugins/tree/main/finstock"
     }
   ]
 }

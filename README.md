@@ -7,6 +7,7 @@ A collection of plugins for [Claude Code](https://claude.ai/code).
 | Plugin | Description |
 |--------|-------------|
 | [tw-deploy](./tw-deploy/) | Deploy applications to Timeweb Cloud |
+| [finstock](./finstock/) | Stock and finance accounting finstock: MCP tools and working rules (Russian) |
 
 ## Quick Start
 
